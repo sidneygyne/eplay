@@ -1,4 +1,4 @@
-import { createGlobalStyle } from 'styled-components'
+import styled, { createGlobalStyle } from 'styled-components'
 import cores from './cores'
 
 export const EstiloGlobal = createGlobalStyle`
@@ -14,5 +14,12 @@ export const EstiloGlobal = createGlobalStyle`
   body {
     background-color: ${cores.preta};
     color: ${cores.branca};
+    padding-top: 40px;
   }
+`
+
+export const Container = styled.div`
+  max-width: 1024px;
+  width: 100%;
+  margin: 0 auto;
 `

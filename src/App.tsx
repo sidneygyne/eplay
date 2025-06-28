@@ -1,10 +1,13 @@
-import { EstiloGlobal } from './styles'
+import { Header } from './components/Header'
+import { Container, EstiloGlobal } from './styles'
 
 function App() {
   return (
     <>
       <EstiloGlobal />
-      <h1>Oi</h1>
+      <Container>
+        <Header />
+      </Container>
     </>
   )
 }
