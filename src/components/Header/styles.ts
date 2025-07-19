@@ -1,4 +1,5 @@
 import styled from 'styled-components'
+import { breakpoints } from '../../styles'
 import cores from '../../styles/cores'
 
 export const HeaderBar = styled.header`
@@ -19,6 +20,10 @@ export const HeaderBar = styled.header`
   div {
     display: flex;
     align-items: center;
+  }
+
+  @media (max-width: ${breakpoints.tablet}) {
+    display: none;
   }
 `
 export const Links = styled.ul`
