@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react'
 import { Banner } from '../../components/Banner'
 import { ProductsList } from '../../components/ProductList'
-import resident from '../../assets/images/resident.png'
 import { useGetOnSaleQuery, useGetSoonQuery } from '../../services/api'
 
 // const promocoes: Game[] = [

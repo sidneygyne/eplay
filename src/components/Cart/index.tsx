@@ -1,8 +1,13 @@
 import { useDispatch, useSelector } from 'react-redux'
+
 import { RootReducer } from '../../store'
 import { close, remove } from '../../store/reducers/cart'
+
 import { Button } from '../Button'
 import { Tag } from '../Tag'
+
+import fechar from '../../assets/images/close.png'
+
 import {
   CartContainer,
   CartItem,
@@ -12,8 +17,7 @@ import {
   Quantity,
   Sidebar
 } from './styles'
-import fechar from '../../assets/images/close.png'
-import { formataPreco } from '../ProductList'
+import { parseToBrl } from '../../utils'
 
 export const Cart = () => {
   const { isOpen, items } = useSelector((state: RootReducer) => state.cart)
@@ -46,7 +50,7 @@ export const Cart = () => {
                 <h3>{item.name}</h3>
                 <Tag>{item.details.category}</Tag>
                 <Tag>{item.details.system}</Tag>
-                <span>{formataPreco(item.prices.current)}</span>
+                <span>{parseToBrl(item.prices.current)}</span>
               </div>
               <Close
                 onClick={() => removeItem(item.id)}
@@ -58,7 +62,7 @@ export const Cart = () => {
         </ul>
         <Quantity>{items.length} jogo(s) no carrinho</Quantity>
         <Prices>
-          Total R$ {formataPreco(getTotalPrice())}
+          Total R$ {parseToBrl(getTotalPrice())}
           <span>ate 6x sem juros</span>
         </Prices>
         <Button title="Clique aqui para continuar com a compra" type="button">

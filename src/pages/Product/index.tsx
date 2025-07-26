@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+
 import { Gallery } from '../../components/Gallery'
 import { Hero } from '../../components/Hero'
 import { Section } from '../../components/Section'
+
 import { useGetGameQuery } from '../../services/api'
-import { Game } from '../Home'
 
 export const Product = () => {
   const { id } = useParams()

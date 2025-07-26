@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { breakpoints } from '../../styles'
-import cores from '../../styles/cores'
+import colors from '../../styles/colors'
 import { TagContainer } from '../Tag/styles'
 
 export const Banner = styled.div`
@@ -19,7 +19,7 @@ export const Banner = styled.div`
 
   &::after {
     position: absolute;
-    background-color: ${cores.preta};
+    background-color: ${colors.black};
     height: 100%;
     width: 100%;
     top: 0;
@@ -44,7 +44,7 @@ export const Banner = styled.div`
 
 export const Infos = styled.div`
   padding: 16px;
-  background-color: ${cores.preta};
+  background-color: ${colors.black};
   max-width: 290px;
   font-weight: bold;
 
