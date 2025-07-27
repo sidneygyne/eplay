@@ -1,4 +1,5 @@
 import { useGetFeaturedGameQuery } from '../../services/api'
+import { Loader } from '../Loader'
 import { Tag } from '../Tag'
 import { Button } from '../Button'
 
@@ -16,7 +17,7 @@ export const Banner = () => {
   // }, [])
 
   if (!game) {
-    return <h3>Carregando...</h3>
+    return <Loader />
   }
 
   return (
