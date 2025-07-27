@@ -1,5 +1,3 @@
-import { Game } from '../pages/Home'
-
 //Formata preço
 export const parseToBrl = (amout = 0) => {
   return new Intl.NumberFormat('pt-BR', {

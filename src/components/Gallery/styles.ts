@@ -1,5 +1,4 @@
 import styled from 'styled-components'
-import { breakpoints } from '../../styles'
 import colors from '../../styles/colors'
 
 export const Items = styled.ul`

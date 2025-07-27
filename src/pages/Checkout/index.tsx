@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import { useFormik } from 'formik'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { Navigate } from 'react-router-dom'
 
 import { usePurchaseMutation } from '../../services/api'
-
 import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 
@@ -15,7 +14,9 @@ import creditCard from '../../assets/images/credit-card.png'
 import { InputGroup, Row, TagButton } from './style'
 
 import { RootReducer } from '../../store'
+import { clear } from '../../store/reducers/cart'
 import { getTotalPrice, parseToBrl } from '../../utils'
+import ReactInputMask from 'react-input-mask'
 
 type Installments = {
   quantity: number
@@ -25,10 +26,11 @@ type Installments = {
 
 export const Checkout = () => {
   const [payWithCard, setPayWithCard] = useState(false)
-  const [purchase, { data, isSuccess }] = usePurchaseMutation()
+  const [purchase, { data, isSuccess, isLoading }] = usePurchaseMutation()
   const { items } = useSelector((state: RootReducer) => state.cart)
   const [installments, setInstallments] = useState<Installments[]>([])
   const totalPrices = getTotalPrice(items)
+  const dispatch = useDispatch()
 
   const form = useFormik({
     initialValues: {
@@ -47,92 +49,94 @@ export const Checkout = () => {
       installments: 1
     },
 
-    validationSchema: Yup.object({
-      fullname: Yup.string()
-        .min(5, 'O nome precisa ter pelo menos 5 caracteres')
-        .required('O campo é obrigatório!'),
+    validationSchema: (ctx: { payWithCard: boolean }) =>
+      Yup.object({
+        fullname: Yup.string()
+          .min(5, 'O nome precisa ter pelo menos 5 caracteres')
+          .required('O campo é obrigatório!'),
 
-      email: Yup.string()
-        .email('E-mail inválido!')
-        .required('O campo é obrigatório!'),
+        email: Yup.string()
+          .email('E-mail inválido!')
+          .required('O campo é obrigatório!'),
 
-      cpf: Yup.string()
-        .matches(
-          /^\d{3}\.\d{3}\.\d{3}-\d{2}$/,
-          'CPF inválido! (Formato: 000.000.000-00)'
-        )
-        .required('O campo é obrigatório!'),
+        cpf: Yup.string()
+          .matches(
+            /^\d{3}\.\d{3}\.\d{3}-\d{2}$/,
+            'CPF inválido! (Formato: 000.000.000-00)'
+          )
+          .required('O campo é obrigatório!'),
 
-      deliveryEmail: Yup.string()
-        .email('E-mail inválido!')
-        .required('O campo é obrigatório!'),
+        deliveryEmail: Yup.string()
+          .email('E-mail inválido!')
+          .required('O campo é obrigatório!'),
 
-      confirmDeliveryEmail: Yup.string()
-        .oneOf(
-          [Yup.ref('deliveryEmail'), undefined],
-          'Os e-mails não coincidem!'
-        )
-        .required('O campo é obrigatório!'),
+        confirmDeliveryEmail: Yup.string()
+          .oneOf(
+            [Yup.ref('deliveryEmail'), undefined],
+            'Os e-mails não coincidem!'
+          )
+          .required('O campo é obrigatório!'),
 
-      cardOwner: Yup.string()
-        .min(5, 'Nome muito curto')
-        .when((values, schema) =>
-          payWithCard ? schema.required('O campo é obrigatório') : schema
-        ),
+        cardOwner: Yup.string().when([], {
+          is: () => ctx.payWithCard,
+          then: (schema) => schema.required('O campo é obrigatório'),
+          otherwise: (schema) => schema
+        }),
 
-      cpfCardOwner: Yup.string()
-        .matches(
-          /^\d{3}\.\d{3}\.\d{3}-\d{2}$/,
-          'CPF inválido! (Formato: 000.000.000-00)'
-        )
-        .when((values, schema) =>
-          payWithCard ? schema.required('O campo é obrigatório') : schema
-        ),
+        cpfCardOwner: Yup.string()
+          .matches(
+            /^\d{3}\.\d{3}\.\d{3}-\d{2}$/,
+            'CPF inválido! (Formato: 000.000.000-00)'
+          )
+          .when((values, schema) =>
+            payWithCard ? schema.required('O campo é obrigatório') : schema
+          ),
 
-      cardDisplayName: Yup.string()
-        .min(3, 'Nome no cartão muito curto')
-        .when((values, schema) =>
-          payWithCard ? schema.required('O campo é obrigatório') : schema
-        ),
+        cardDisplayName: Yup.string()
+          .min(3, 'Nome no cartão muito curto')
+          .when((values, schema) =>
+            payWithCard ? schema.required('O campo é obrigatório') : schema
+          ),
 
-      cardNumber: Yup.string()
-        .matches(
-          /^\d{16}$/,
-          'Número de cartão inválido (16 dígitos, apenas números)'
-        )
-        .when((values, schema) =>
-          payWithCard ? schema.required('O campo é obrigatório') : schema
-        ),
+        cardNumber: Yup.string()
+          .transform((value) => value.replace(/\s/g, '')) // remove espaços antes de validar
+          .matches(
+            /^\d{16}$/,
+            'Número de cartão inválido (16 dígitos, apenas números)'
+          )
+          .when((values, schema) =>
+            payWithCard ? schema.required('O campo é obrigatório') : schema
+          ),
 
-      expiresMonth: Yup.string()
-        .matches(/^(0[1-9]|1[0-2])$/, 'Mês inválido (de 01 a 12)')
-        .when((values, schema) =>
-          payWithCard ? schema.required('O campo é obrigatório') : schema
-        ),
+        expiresMonth: Yup.string()
+          .matches(/^(0[1-9]|1[0-2])$/, 'Mês inválido (de 01 a 12)')
+          .when((values, schema) =>
+            payWithCard ? schema.required('O campo é obrigatório') : schema
+          ),
 
-      expiresYear: Yup.string()
-        .matches(/^\d{4}$/, 'Ano inválido (formato YYYY)')
-        .test('is-future', '', (value) => {
-          const currentYear = new Date().getFullYear()
-          return value ? parseInt(value) >= currentYear : false
-        })
-        .when((values, schema) =>
-          payWithCard ? schema.required('O campo é obrigatório') : schema
-        ),
+        expiresYear: Yup.string()
+          .matches(/^\d{4}$/, 'Ano inválido (formato YYYY)')
+          .test('is-future', '', (value) => {
+            const currentYear = new Date().getFullYear()
+            return value ? parseInt(value) >= currentYear : false
+          })
+          .when((values, schema) =>
+            payWithCard ? schema.required('O campo é obrigatório') : schema
+          ),
 
-      cardCode: Yup.string()
-        .matches(/^\d{3}$/, 'CVV inválido (3 dígitos)')
-        .when((values, schema) =>
-          payWithCard ? schema.required('O campo é obrigatório') : schema
-        ),
+        cardCode: Yup.string()
+          .matches(/^\d{3}$/, 'CVV inválido (3 dígitos)')
+          .when((values, schema) =>
+            payWithCard ? schema.required('O campo é obrigatório') : schema
+          ),
 
-      installments: Yup.number()
-        .min(1, 'Selecione ao menos 1 parcela')
-        .max(12, 'Número máximo de parcelas é 12')
-        .when((values, schema) =>
-          payWithCard ? schema.required('O campo é obrigatório') : schema
-        )
-    }),
+        installments: Yup.number()
+          .min(1, 'Selecione ao menos 1 parcela')
+          .max(6, 'Número máximo de parcelas é 6')
+          .when((values, schema) =>
+            payWithCard ? schema.required('O campo é obrigatório') : schema
+          )
+      }),
     onSubmit: (values) => {
       purchase({
         billing: {
@@ -144,7 +148,7 @@ export const Checkout = () => {
           email: values.deliveryEmail
         },
         payment: {
-          installments: 1,
+          installments: values.installments,
           card: {
             active: payWithCard,
             code: Number(values.cardCode),
@@ -155,17 +159,15 @@ export const Checkout = () => {
               name: values.cardOwner
             },
             expires: {
-              month: 1,
-              year: 2023
+              month: Number(values.expiresMonth),
+              year: Number(values.expiresYear)
             }
           }
         },
-        products: [
-          {
-            id: 1,
-            price: 10
-          }
-        ]
+        products: items.map((item) => ({
+          id: item.id,
+          price: item.prices.current as number
+        }))
       })
     }
   })
@@ -197,13 +199,19 @@ export const Checkout = () => {
     }
   }, [totalPrices])
 
-  if (items.length === 0) {
+  useEffect(() => {
+    if (isSuccess) {
+      dispatch(clear())
+    }
+  }, [isSuccess, dispatch])
+
+  if (items.length === 0 && !isSuccess) {
     return <Navigate to="/" />
   }
 
   return (
     <div className="container">
-      {isSuccess ? (
+      {isSuccess && data ? (
         <Card title="Muito obrigado">
           <>
             <p>
@@ -269,7 +277,7 @@ export const Checkout = () => {
                 </InputGroup>
                 <InputGroup>
                   <label htmlFor="cpf">CPF</label>
-                  <input
+                  <ReactInputMask
                     id="cpf"
                     type="text"
                     name="cpf"
@@ -277,6 +285,7 @@ export const Checkout = () => {
                     onChange={form.handleChange}
                     onBlur={form.handleBlur}
                     className={checkInputHasError('cpf') ? 'error' : ''}
+                    mask="999.999.999-99"
                   />
                 </InputGroup>
               </Row>
@@ -359,7 +368,7 @@ export const Checkout = () => {
                         <label htmlFor="cpfCardOwner">
                           CPF do titular do cartão
                         </label>
-                        <input
+                        <ReactInputMask
                           id="cpfCardOwner"
                           type="text"
                           name="cpfCardOwner"
@@ -369,6 +378,7 @@ export const Checkout = () => {
                           className={
                             checkInputHasError('cpfCardOwner') ? 'error' : ''
                           }
+                          mask="999.999.999-99"
                         />
                       </InputGroup>
                     </Row>
@@ -389,7 +399,7 @@ export const Checkout = () => {
                       </InputGroup>
                       <InputGroup>
                         <label htmlFor="cardNumber">Número do cartão</label>
-                        <input
+                        <ReactInputMask
                           id="cardNumber"
                           type="text"
                           name="cardNumber"
@@ -399,11 +409,12 @@ export const Checkout = () => {
                           className={
                             checkInputHasError('cardNumber') ? 'error' : ''
                           }
+                          mask="9999 9999 9999 9999"
                         />
                       </InputGroup>
                       <InputGroup maxWidth="123px">
                         <label htmlFor="expiresMonth">Mês de expiração</label>
-                        <input
+                        <ReactInputMask
                           id="expiresMonth"
                           type="text"
                           name="expiresMonth"
@@ -413,11 +424,12 @@ export const Checkout = () => {
                           className={
                             checkInputHasError('expiresMonth') ? 'error' : ''
                           }
+                          mask="99"
                         />
                       </InputGroup>
                       <InputGroup maxWidth="123px">
                         <label htmlFor="expiresYear">Ano de vencimento</label>
-                        <input
+                        <ReactInputMask
                           id="expiresYear"
                           type="text"
                           name="expiresYear"
@@ -427,11 +439,12 @@ export const Checkout = () => {
                           className={
                             checkInputHasError('expiresYear') ? 'error' : ''
                           }
+                          mask="9999"
                         />
                       </InputGroup>
                       <InputGroup maxWidth="48px">
                         <label htmlFor="cardCode">CVV</label>
-                        <input
+                        <ReactInputMask
                           id="cardCode"
                           type="text"
                           name="cardCode"
@@ -441,11 +454,12 @@ export const Checkout = () => {
                           className={
                             checkInputHasError('cardCode') ? 'error' : ''
                           }
+                          mask="999"
                         />
                       </InputGroup>
                     </Row>
                     <Row marginTop="24px">
-                      <InputGroup maxWidth="160px">
+                      <InputGroup maxWidth="200px">
                         <label htmlFor="installments">Parcelamento</label>
                         <select
                           id="installments"
@@ -457,7 +471,10 @@ export const Checkout = () => {
                           }
                         >
                           {installments.map((installments) => (
-                            <option key={installments.quantity}>
+                            <option
+                              value={installments.quantity}
+                              key={installments.quantity}
+                            >
                               {installments.quantity}x de R${' '}
                               {installments.formattedAmount}
                             </option>
@@ -479,8 +496,13 @@ export const Checkout = () => {
               </div>
             </>
           </Card>
-          <Button type="submit" title="Clique aqui para finalizar compra">
-            Finalizar compra
+          <Button
+            onClick={form.handleSubmit}
+            type="submit"
+            title="Clique aqui para finalizar compra"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Finalizando compra...' : 'Finalizar compra'}
           </Button>
         </form>
       )}
